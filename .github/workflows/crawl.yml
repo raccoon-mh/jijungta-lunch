@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
@@ -26,6 +26,15 @@ jobs:
 
       - name: Crawl Instagram
         run: node src/crawl.mjs
+
+      - name: Upload screenshots (debug)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+          retention-days: 3
+          if-no-files-found: ignore
 
       - name: Commit & Push
         run: |
