@@ -15,8 +15,12 @@ npm ci --prefer-offline 2>/dev/null || npm install
 # 크롤링 실행
 node src/crawl.mjs
 
+# data를 docs에도 복사 (GitHub Pages용)
+mkdir -p "$REPO_DIR/docs/data"
+cp "$REPO_DIR/data/latest.json" "$REPO_DIR/docs/data/latest.json"
+
 # 결과 커밋 & 푸시
-git add data/
+git add data/ docs/data/
 if git diff --staged --quiet; then
   echo "변경사항 없음, 스킵"
 else

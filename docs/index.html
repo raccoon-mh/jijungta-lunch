@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지정타 점심 메뉴</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 16px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .date { color: #888; font-size: 0.9rem; margin-bottom: 12px; }
+    .menu { white-space: pre-line; line-height: 1.8; }
+    .loading { color: #999; }
+    a { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍽 지정타 점심 메뉴</h1>
+    <div class="card">
+      <div class="date" id="date">불러오는 중...</div>
+      <div class="menu loading" id="menu"></div>
+    </div>
+  </div>
+  <script>
+    fetch('./data/latest.json')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('date').textContent = data.date;
+        // body에서 계정명, 시간 등 앞부분 제거
+        let body = data.body || '';
+        const menuStart = body.indexOf('(예정)');
+        if (menuStart === -1) {
+          const altStart = body.indexOf('2026');
+          if (altStart !== -1) body = body.substring(altStart);
+        } else {
+          body = body.substring(menuStart);
+        }
+        // 해시태그 이후 제거
+        const hashIdx = body.indexOf('#');
+        if (hashIdx !== -1) body = body.substring(0, hashIdx).trim();
+        document.getElementById('menu').textContent = body;
+        document.getElementById('menu').classList.remove('loading');
+      })
+      .catch(() => {
+        document.getElementById('menu').textContent = '메뉴를 불러올 수 없습니다.';
+      });
+  </script>
+</body>
+</html>
