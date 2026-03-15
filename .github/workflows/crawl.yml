@@ -1,0 +1,40 @@
+name: Crawl Lunch Menu
+
+on:
+  schedule:
+    - cron: '0 1 * * 1-5'  # 평일 10:00 KST (UTC 01:00)
+  workflow_dispatch:         # 수동 트리거
+
+permissions:
+  contents: write
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Crawl Instagram
+        run: node src/crawl.mjs
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "변경사항 없음, 스킵"
+          else
+            git commit -m "data: $(date -u -d '+9 hours' '+%Y-%m-%d') 점심 메뉴 업데이트"
+            git push
+          fi
