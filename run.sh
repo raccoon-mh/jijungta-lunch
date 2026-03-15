@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 export PATH="$HOME/.nvm/versions/node/v25.6.1/bin:$PATH"
 
@@ -12,8 +11,8 @@ git pull --ff-only
 # 의존성 설치 (package-lock.json 변경 시에만)
 npm ci --prefer-offline 2>/dev/null || npm install
 
-# 크롤링 실행
-node src/crawl.mjs
+# 크롤링 실행 (부분 실패해도 계속 진행)
+node src/crawl.mjs || echo "⚠️ 일부 크롤링 실패 (부분 데이터 저장됨)"
 
 # data를 docs에도 복사 (GitHub Pages용)
 mkdir -p "$REPO_DIR/docs/data"

@@ -335,7 +335,7 @@ async function main() {
 
   mkdirSync(DATA_DIR, { recursive: true });
 
-  let hasError = false;
+  let successCount = 0;
 
   for (const restaurant of restaurants) {
     console.log(`\n[${restaurant.id}] 크롤링 시작...`);
@@ -353,7 +353,6 @@ async function main() {
       const menuDate = extractMenuDate(result.body);
       if (!menuDate) {
         console.error(`  [${restaurant.id}] 메뉴 날짜를 추출할 수 없습니다.`);
-        hasError = true;
         continue;
       }
 
@@ -372,10 +371,10 @@ async function main() {
       writeFileSync(filePath, JSON.stringify(dayData, null, 2), 'utf-8');
       console.log(`  메뉴 날짜: ${menuDate}`);
       console.log(`  완료: ${result.body.substring(0, 80)}...`);
+      successCount++;
 
     } catch (err) {
       console.error(`  [${restaurant.id}] 에러: ${err.message}`);
-      hasError = true;
     }
   }
 
@@ -390,11 +389,11 @@ async function main() {
     .reverse();
   writeFileSync(join(DATA_DIR, 'dates.json'), JSON.stringify(dates, null, 2), 'utf-8');
 
-  if (hasError) {
-    console.error('\n일부 크롤링 실패 (부분 저장됨)');
+  console.log(`\n크롤링 완료: ${successCount}/${restaurants.length} 성공`);
+  if (successCount === 0) {
+    console.error('모든 크롤링 실패');
     process.exit(1);
   }
-  console.log('\n모든 크롤링 완료');
 }
 
 main();
