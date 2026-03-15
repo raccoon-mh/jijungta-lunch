@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -250,6 +250,13 @@ async function main() {
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const dateStr = kst.toISOString().split('T')[0];
 
+  // 날짜별 통합 데이터
+  const dayData = {
+    date: dateStr,
+    crawled_at: kst.toISOString(),
+    restaurants: {},
+  };
+
   let hasError = false;
 
   for (const restaurant of restaurants) {
@@ -262,19 +269,14 @@ async function main() {
         result = await crawlText(context, restaurant);
       }
 
-      const output = {
-        date: dateStr,
+      dayData.restaurants[restaurant.id] = {
         url: result.url,
-        crawled_at: kst.toISOString(),
         title: result.title,
         body: result.body,
         image: result.image,
       };
 
-      const filePath = join(DATA_DIR, `${restaurant.id}-latest.json`);
-      writeFileSync(filePath, JSON.stringify(output, null, 2), 'utf-8');
-      console.log(`  저장: ${filePath}`);
-      console.log(`  메뉴 미리보기: ${output.body.substring(0, 100)}...`);
+      console.log(`  완료: ${result.body.substring(0, 80)}...`);
 
     } catch (err) {
       console.error(`  [${restaurant.id}] 에러: ${err.message}`);
@@ -284,11 +286,27 @@ async function main() {
 
   await browser.close();
 
+  // 날짜별 파일 저장
+  writeFileSync(join(DATA_DIR, `${dateStr}.json`), JSON.stringify(dayData, null, 2), 'utf-8');
+  console.log(`\n저장: data/${dateStr}.json`);
+
+  // dates.json 인덱스 업데이트
+  const datesPath = join(DATA_DIR, 'dates.json');
+  let dates = [];
+  if (existsSync(datesPath)) {
+    try { dates = JSON.parse(readFileSync(datesPath, 'utf-8')); } catch {}
+  }
+  if (!dates.includes(dateStr)) {
+    dates.push(dateStr);
+    dates.sort().reverse(); // 최신순
+  }
+  writeFileSync(datesPath, JSON.stringify(dates, null, 2), 'utf-8');
+
   if (hasError) {
-    console.error('\n일부 크롤링 실패');
+    console.error('\n일부 크롤링 실패 (부분 저장됨)');
     process.exit(1);
   }
-  console.log('\n모든 크롤링 완료');
+  console.log('모든 크롤링 완료');
 }
 
 main();

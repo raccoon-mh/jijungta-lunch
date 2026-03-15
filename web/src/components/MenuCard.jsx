@@ -72,7 +72,7 @@ export function MenuCard({ restaurant, data, loading, index }) {
   const colors = colorMap[restaurant.color] || colorMap.warm
 
   if (loading) return <SkeletonCard />
-  if (!restaurant.dataFile) return <PlaceholderCard restaurant={restaurant} colors={colors} />
+  if (!restaurant.active) return <PlaceholderCard restaurant={restaurant} colors={colors} />
 
   const menuText = parseMenuBody(data?.body)
   const sections = parseMenuSections(menuText)

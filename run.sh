@@ -17,7 +17,7 @@ node src/crawl.mjs
 
 # data를 docs에도 복사 (GitHub Pages용)
 mkdir -p "$REPO_DIR/docs/data"
-cp "$REPO_DIR/data/"*-latest.json "$REPO_DIR/docs/data/" 2>/dev/null || true
+cp "$REPO_DIR/data/"*.json "$REPO_DIR/docs/data/" 2>/dev/null || true
 
 # 결과 커밋 & 푸시
 git add data/ docs/data/
