@@ -22,20 +22,54 @@ function extractMenuDate(body) {
   return null;
 }
 
+// OCR 결과 후처리 (노이즈 제거, 메뉴 항목 추출)
+function parseOcrMenu(ocrText, skipPatterns = []) {
+  const lines = ocrText.split('\n').map(l => l.trim()).filter(Boolean);
+  const menuItems = [];
+  let dateInfo = '';
+
+  for (const line of lines) {
+    // 날짜 추출
+    if (line.includes('월') && line.includes('일') && (line.includes('메뉴') || line.includes('요일'))) {
+      dateInfo = line.replace(/@@/g, '').replace(/@/g, '').trim();
+      continue;
+    }
+    // 스킵 패턴
+    if (skipPatterns.some(p => line.includes(p))) continue;
+    // 안내문 스킵
+    if (line.includes('상기 메뉴') || line.includes('변동될')) continue;
+
+    let cleaned = line
+      .replace(/[^\w가-힣\s&/*()\-:]/g, '')
+      .replace(/\b[a-zA-Z]{1,4}\b/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (cleaned.length >= 2 && /[가-힣]/.test(cleaned)) {
+      menuItems.push(cleaned);
+    }
+  }
+  return { dateInfo, menuItems };
+}
+
 // 식당 설정
 const restaurants = [
   {
     id: 'goodfood_xi',
     url: 'https://www.instagram.com/goodfood_xi/',
-    type: 'text', // 게시글 텍스트에서 메뉴 추출
+    type: 'text',
     postSelector: 'a[href*="/p/"]',
   },
   {
     id: 'gangnambab',
     url: 'https://www.instagram.com/gangnambab/',
-    type: 'video-ocr', // 영상 프레임 캡처 → OCR
+    type: 'video-ocr',
     postSelector: 'a[href*="/reel/"], a[href*="/p/"]',
-    menuPostIndex: 1, // 홀수 인덱스가 메뉴판 (0=음식사진, 1=메뉴판)
+    menuPostIndex: 1,
+  },
+  {
+    id: 'lunchtime',
+    url: 'https://pf.kakao.com/_xbbMPn',
+    type: 'kakao-ocr', // 카카오 채널 프로필 이미지 OCR
   },
 ];
 
@@ -201,29 +235,8 @@ async function crawlVideoOcr(context, restaurant) {
       ).toString();
 
       // 메뉴 파싱
-      const lines = ocrResult.split('\n').map(l => l.trim()).filter(Boolean);
-      const menuItems = [];
-      let dateInfo = '';
-
-      for (const line of lines) {
-        if (line.includes('월') && line.includes('일') && (line.includes('메뉴') || line.includes('요일'))) {
-          dateInfo = line.replace(/@@/g, '').replace(/@/g, '').trim();
-          continue;
-        }
-        if (line.includes('강남밥상') || line.includes('주소') || line.includes('인스타') ||
-            line.includes('OPEN') || line.includes('검색') || line.includes('점심') ||
-            line.includes('과천점') || line.includes('광장') || line.includes('뷔페')) continue;
-
-        // 이모지 잔여물 제거 (OCR이 이모지를 영문/기호로 오인식)
-        let cleaned = line
-          .replace(/[^\w가-힣\s&/()]/g, '')  // 특수문자 제거
-          .replace(/\b[a-zA-Z]{1,4}\b/g, '') // 짧은 영문 (이모지 오인식) 제거
-          .replace(/\s{2,}/g, ' ')           // 다중 공백 정리
-          .trim();
-        if (cleaned.length >= 2 && /[가-힣]/.test(cleaned)) {
-          menuItems.push(cleaned);
-        }
-      }
+      const skipPatterns = ['강남밥상', '주소', '인스타', 'OPEN', '검색', '점심', '과천점', '광장', '뷔페'];
+      const { dateInfo, menuItems } = parseOcrMenu(ocrResult, skipPatterns);
 
       if (menuItems.length >= 3) {
         menuBody = `${dateInfo}\n${menuItems.join('\n')}`;
@@ -248,6 +261,69 @@ async function crawlVideoOcr(context, restaurant) {
   };
 }
 
+// 카카오 채널 프로필 이미지 OCR (lunchtime)
+async function crawlKakaoOcr(context, restaurant) {
+  const page = await context.newPage();
+  await page.goto(restaurant.url, { waitUntil: 'networkidle', timeout: 30000 });
+  await page.waitForTimeout(3000);
+
+  // 프로필 이미지 URL 추출
+  const imgUrl = await page.evaluate(() => {
+    const head = document.querySelector('.item_profile_head');
+    if (!head) return null;
+    const img = head.querySelector('img');
+    return img?.src || null;
+  });
+  await page.close();
+
+  if (!imgUrl) throw new Error(`${restaurant.id}: 프로필 이미지를 찾을 수 없습니다.`);
+  console.log(`  이미지: ${imgUrl.substring(0, 80)}...`);
+
+  // 이미지 다운로드
+  const imgPath = join(SCREENSHOTS_DIR, `${restaurant.id}-menu.jpg`);
+  mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+  const imgPage = await context.newPage();
+  const response = await imgPage.goto(imgUrl);
+  const buffer = await response.body();
+  writeFileSync(imgPath, buffer);
+  await imgPage.close();
+
+  // 이미지 전처리
+  const preprocessedPath = join(SCREENSHOTS_DIR, `${restaurant.id}-preprocessed.png`);
+  const metadata = await sharp(imgPath).metadata();
+  const left = Math.floor(metadata.width * 0.08);
+  const right = Math.floor(metadata.width * 0.08);
+  const top = Math.floor(metadata.height * 0.12);
+  const bottom = Math.floor(metadata.height * 0.12);
+
+  await sharp(imgPath)
+    .extract({ left, top, width: metadata.width - left - right, height: metadata.height - top - bottom })
+    .resize({ width: 900 })
+    .toColourspace('b-w')
+    .toFile(preprocessedPath);
+
+  // OCR
+  const ocrResult = execSync(
+    `tesseract "${preprocessedPath}" stdout -l kor+eng --psm 6 2>/dev/null`
+  ).toString();
+
+  const skipPatterns = ['런치타임'];
+  const { dateInfo, menuItems } = parseOcrMenu(ocrResult, skipPatterns);
+
+  if (menuItems.length < 3) {
+    throw new Error(`${restaurant.id}: 메뉴 항목 부족 (${menuItems.length}개)`);
+  }
+
+  console.log(`  OCR 성공: ${menuItems.length}개 메뉴 항목`);
+
+  return {
+    url: restaurant.url,
+    title: '런치타임 (과천 어반허브)',
+    body: `${dateInfo}\n${menuItems.join('\n')}`,
+    image: imgUrl,
+  };
+}
+
 // 메인
 async function main() {
   const browser = await chromium.launch({ headless: true });
@@ -267,6 +343,8 @@ async function main() {
       let result;
       if (restaurant.type === 'video-ocr') {
         result = await crawlVideoOcr(context, restaurant);
+      } else if (restaurant.type === 'kakao-ocr') {
+        result = await crawlKakaoOcr(context, restaurant);
       } else {
         result = await crawlText(context, restaurant);
       }

@@ -25,6 +25,18 @@ export const restaurants = [
     emoji: '🍛',
   },
   {
+    id: 'lunchtime',
+    name: '런치타임',
+    subtitle: '과천 어반허브',
+    location: '과천 어반허브 구내식당',
+    hours: '11:30 ~ 13:30',
+    days: '월~금',
+    parking: null,
+    active: true,
+    color: 'sage',
+    emoji: '🍱',
+  },
+  {
     id: 'placeholder_1',
     name: '준비 중',
     subtitle: '새 식당',
@@ -34,17 +46,6 @@ export const restaurants = [
     active: false,
     color: 'stone',
     emoji: '🍜',
-  },
-  {
-    id: 'placeholder_2',
-    name: '준비 중',
-    subtitle: '새 식당',
-    location: '-',
-    hours: '-',
-    days: '-',
-    active: false,
-    color: 'sage',
-    emoji: '🍱',
   },
 ]
 
