@@ -8,9 +8,21 @@ export const restaurants = [
     hours: '11:00 ~ 14:00',
     days: '월~금',
     parking: '1시간 무료',
-    dataFile: 'latest.json',
+    dataFile: 'goodfood_xi-latest.json',
     color: 'warm',
     emoji: '🍚',
+  },
+  {
+    id: 'gangnambab',
+    name: '강남밥상',
+    subtitle: '과천점',
+    location: '과천대로7나길 37 2층',
+    hours: '05:30 ~ 14:00',
+    days: '월~금',
+    parking: null,
+    dataFile: 'gangnambab-latest.json',
+    color: 'terra',
+    emoji: '🍛',
   },
   {
     id: 'placeholder_1',
@@ -34,17 +46,6 @@ export const restaurants = [
     color: 'sage',
     emoji: '🍱',
   },
-  {
-    id: 'placeholder_3',
-    name: '준비 중',
-    subtitle: '새 식당',
-    location: '-',
-    hours: '-',
-    days: '-',
-    dataFile: null,
-    color: 'terra',
-    emoji: '🥘',
-  },
 ]
 
 // 크롤링 데이터에서 메뉴 텍스트만 추출
@@ -58,7 +59,7 @@ export function parseMenuBody(body) {
     text = text.substring(menuStart)
   } else {
     // 날짜로 시작하는 패턴 찾기
-    const dateMatch = text.match(/\d{4}년/)
+    const dateMatch = text.match(/\d{4}년|\d{1,2}월\s*\d{1,2}일/)
     if (dateMatch) {
       text = text.substring(text.indexOf(dateMatch[0]))
     }
@@ -86,6 +87,8 @@ export function parseMenuSections(text) {
 
     // 날짜/예정 라인은 스킵
     if (trimmed.startsWith('(예정)') || /^\d{4}년/.test(trimmed)) continue
+    // OCR 날짜 라인 스킵 (예: "3월 13일 금요일메뉴")
+    if (/^\d{1,2}월\s*\d{1,2}일/.test(trimmed)) continue
     // 안내문 스킵
     if (trimmed.startsWith('※')) continue
     // 위치/시간 정보 스킵
@@ -112,9 +115,16 @@ export function parseMenuSections(text) {
 // 날짜 텍스트 추출
 export function parseDateFromBody(body) {
   if (!body) return null
-  const match = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\S+요일)/)
-  if (match) {
-    return `${match[1]}.${match[2].padStart(2, '0')}.${match[3].padStart(2, '0')} ${match[4]}`
+  // goodfood_xi 형식: 2026년 03월 16일 월요일
+  const match1 = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\S+요일)/)
+  if (match1) {
+    return `${match1[1]}.${match1[2].padStart(2, '0')}.${match1[3].padStart(2, '0')} ${match1[4]}`
+  }
+  // gangnambab OCR 형식: 3월 13일 금요일
+  const match2 = body.match(/(\d{1,2})월\s*(\d{1,2})일\s*(\S+요일)/)
+  if (match2) {
+    const year = new Date().getFullYear()
+    return `${year}.${match2[1].padStart(2, '0')}.${match2[2].padStart(2, '0')} ${match2[3]}`
   }
   return null
 }
