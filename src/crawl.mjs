@@ -9,6 +9,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', 'data');
 const SCREENSHOTS_DIR = join(__dirname, '..', 'screenshots');
 
+// 본문에서 메뉴 날짜 추출 (YYYY-MM-DD)
+function extractMenuDate(body) {
+  if (!body) return null;
+  const m1 = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (m1) return `${m1[1]}-${m1[2].padStart(2, '0')}-${m1[3].padStart(2, '0')}`;
+  const m2 = body.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  if (m2) {
+    const year = new Date().getFullYear();
+    return `${year}-${m2[1].padStart(2, '0')}-${m2[2].padStart(2, '0')}`;
+  }
+  return null;
+}
+
 // 식당 설정
 const restaurants = [
   {
@@ -246,17 +259,6 @@ async function main() {
 
   mkdirSync(DATA_DIR, { recursive: true });
 
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const dateStr = kst.toISOString().split('T')[0];
-
-  // 날짜별 통합 데이터
-  const dayData = {
-    date: dateStr,
-    crawled_at: kst.toISOString(),
-    restaurants: {},
-  };
-
   let hasError = false;
 
   for (const restaurant of restaurants) {
@@ -269,13 +271,28 @@ async function main() {
         result = await crawlText(context, restaurant);
       }
 
+      // 본문에서 메뉴 날짜 추출
+      const menuDate = extractMenuDate(result.body);
+      if (!menuDate) {
+        console.error(`  [${restaurant.id}] 메뉴 날짜를 추출할 수 없습니다.`);
+        hasError = true;
+        continue;
+      }
+
+      // 해당 날짜 파일에 식당 데이터 저장
+      const filePath = join(DATA_DIR, `${menuDate}.json`);
+      let dayData = { date: menuDate, restaurants: {} };
+      if (existsSync(filePath)) {
+        try { dayData = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
+      }
       dayData.restaurants[restaurant.id] = {
         url: result.url,
         title: result.title,
         body: result.body,
         image: result.image,
       };
-
+      writeFileSync(filePath, JSON.stringify(dayData, null, 2), 'utf-8');
+      console.log(`  메뉴 날짜: ${menuDate}`);
       console.log(`  완료: ${result.body.substring(0, 80)}...`);
 
     } catch (err) {
@@ -286,27 +303,20 @@ async function main() {
 
   await browser.close();
 
-  // 날짜별 파일 저장
-  writeFileSync(join(DATA_DIR, `${dateStr}.json`), JSON.stringify(dayData, null, 2), 'utf-8');
-  console.log(`\n저장: data/${dateStr}.json`);
-
   // dates.json 인덱스 업데이트
-  const datesPath = join(DATA_DIR, 'dates.json');
-  let dates = [];
-  if (existsSync(datesPath)) {
-    try { dates = JSON.parse(readFileSync(datesPath, 'utf-8')); } catch {}
-  }
-  if (!dates.includes(dateStr)) {
-    dates.push(dateStr);
-    dates.sort().reverse(); // 최신순
-  }
-  writeFileSync(datesPath, JSON.stringify(dates, null, 2), 'utf-8');
+  const { readdirSync } = await import('node:fs');
+  const dates = readdirSync(DATA_DIR)
+    .filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .map(f => f.replace('.json', ''))
+    .sort()
+    .reverse();
+  writeFileSync(join(DATA_DIR, 'dates.json'), JSON.stringify(dates, null, 2), 'utf-8');
 
   if (hasError) {
     console.error('\n일부 크롤링 실패 (부분 저장됨)');
     process.exit(1);
   }
-  console.log('모든 크롤링 완료');
+  console.log('\n모든 크롤링 완료');
 }
 
 main();
