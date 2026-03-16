@@ -117,15 +117,17 @@ export function parseMenuSections(text) {
 export function parseDateFromBody(body) {
   if (!body) return null
   // goodfood_xi 형식: 2026년 03월 16일 월요일
-  const match1 = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\S+요일)/)
+  const match1 = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*([월화수목금토일]요일)/)
   if (match1) {
     return `${match1[1]}.${match1[2].padStart(2, '0')}.${match1[3].padStart(2, '0')} ${match1[4]}`
   }
-  // gangnambab OCR 형식: 3월 13일 금요일
-  const match2 = body.match(/(\d{1,2})월\s*(\d{1,2})일\s*(\S+요일)/)
+  // gangnambab OCR 형식: 3월 13일 금요일 (앞에 숫자 노이즈 가능: 03월, 063월)
+  const match2 = body.match(/(\d+)월\s*(\d{1,2})일\s*([월화수목금토일]요일)/)
   if (match2) {
     const year = new Date().getFullYear()
-    return `${year}.${match2[1].padStart(2, '0')}.${match2[2].padStart(2, '0')} ${match2[3]}`
+    let month = parseInt(match2[1], 10)
+    if (month > 12) month = parseInt(match2[1].slice(-1), 10)
+    return `${year}.${String(month).padStart(2, '0')}.${match2[2].padStart(2, '0')} ${match2[3]}`
   }
   return null
 }
