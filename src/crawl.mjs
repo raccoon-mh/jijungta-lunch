@@ -272,7 +272,7 @@ async function crawlVideoOcr(context, restaurant) {
   let postUrl = '';
   let ogImage = '';
 
-  for (let i = menuIndex; i < Math.min(menuIndex + 6, hrefs.length); i += 1) {
+  for (let i = menuIndex; i < Math.min(menuIndex + 2, hrefs.length); i += 1) {
     const url = `https://www.instagram.com${hrefs[i]}`;
     console.log(`  메뉴판 후보 [${i}]: ${url}`);
 
