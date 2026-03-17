@@ -14,12 +14,8 @@ npm ci --prefer-offline 2>/dev/null || npm install
 # 크롤링 실행 (부분 실패해도 계속 진행)
 node src/crawl.mjs || echo "⚠️ 일부 크롤링 실패 (부분 데이터 저장됨)"
 
-# data를 docs에도 복사 (GitHub Pages용)
-mkdir -p "$REPO_DIR/docs/data"
-cp "$REPO_DIR/data/"*.json "$REPO_DIR/docs/data/" 2>/dev/null || true
-
 # 결과 커밋 & 푸시
-git add data/ docs/data/
+git add docs/data/
 if git diff --staged --quiet; then
   echo "변경사항 없음, 스킵"
 else

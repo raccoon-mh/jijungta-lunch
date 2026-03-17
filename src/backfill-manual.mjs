@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', 'data');
+const DATA_DIR = join(__dirname, '..', 'docs', 'data');
 mkdirSync(DATA_DIR, { recursive: true });
 
 function saveDayData(date, restaurantId, data) {

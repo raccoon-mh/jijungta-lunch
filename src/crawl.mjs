@@ -6,10 +6,10 @@ import { execSync } from 'child_process';
 import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', 'data');
+const DATA_DIR = join(__dirname, '..', 'docs', 'data');
 const SCREENSHOTS_DIR = join(__dirname, '..', 'screenshots');
 const COOKIE_PATH = join(__dirname, '..', '.instagram-cookies.json');
-const AUTH_PATH = '/home/raccoon/workspace/.auth/instagram';
+const AUTH_PATH = '~/.auth/instagram';
 
 // 본문에서 메뉴 날짜 추출 (YYYY-MM-DD)
 function extractMenuDate(body) {
@@ -101,7 +101,7 @@ function loadCookies() {
         return cookies;
       }
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -141,7 +141,7 @@ async function loginInstagram(context) {
   try {
     await page.locator('button:has-text("Allow all cookies"), button:has-text("모든 쿠키 허용")').first().click({ timeout: 3000 });
     await page.waitForTimeout(1000);
-  } catch {}
+  } catch { }
 
   // 로그인 폼 입력 (Instagram 새 로그인 폼: input[name="email"] + div[role="button"])
   const usernameInput = page.locator('input[name="username"], input[name="email"]').first();
@@ -186,7 +186,7 @@ async function dismissPopup(page) {
       await page.locator(selector).first().click({ timeout: 2000 });
       await page.waitForTimeout(1000);
       break;
-    } catch {}
+    } catch { }
   }
 }
 
@@ -513,7 +513,7 @@ async function main() {
       const filePath = join(DATA_DIR, `${menuDate}.json`);
       let dayData = { date: menuDate, restaurants: {} };
       if (existsSync(filePath)) {
-        try { dayData = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
+        try { dayData = JSON.parse(readFileSync(filePath, 'utf-8')); } catch { }
       }
       dayData.restaurants[restaurant.id] = {
         url: result.url,

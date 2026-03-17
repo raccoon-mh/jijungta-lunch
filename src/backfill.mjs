@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
 import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', 'data');
+const DATA_DIR = join(__dirname, '..', 'docs', 'data');
 const SCREENSHOTS_DIR = join(__dirname, '..', 'screenshots');
 mkdirSync(DATA_DIR, { recursive: true });
 mkdirSync(SCREENSHOTS_DIR, { recursive: true });
