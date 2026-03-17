@@ -55,11 +55,11 @@ function parseOcrMenu(ocrText, skipPatterns = []) {
 
     let cleaned = line
       .replace(/[^\w가-힣\s&/*()\-:]/g, '')
-      .replace(/\b[a-zA-Z]{1,4}\b/g, '')
+      .replace(/\b[a-zA-Z]+\b/g, '')       // 영문 단어 제거 (이모지 잔상)
       .replace(/\s{2,}/g, ' ')
       .trim();
-    // 끝에 붙은 1글자 노이즈 제거 (예: "직화제육볶음 태" → "직화제육볶음")
-    cleaned = cleaned.replace(/\s+[가-힣a-zA-Z]$/, '').trim();
+    // 끝에 붙은 1~2글자 노이즈 제거 (예: "직화제육볶음 태" → "직화제육볶음")
+    cleaned = cleaned.replace(/\s+[가-힣a-zA-Z\d]{1,2}$/, '').trim();
     // 한글 2글자 이상 포함된 항목만
     const koreanChars = (cleaned.match(/[가-힣]/g) || []).length;
     if (cleaned.length >= 2 && koreanChars >= 2) {
@@ -304,24 +304,25 @@ async function crawlVideoOcr(context, restaurant) {
 
     await postPage.close();
 
-    // 이미지 전처리
+    // 이미지 전처리: 노란 배경에서 검정 글씨만 추출
     const preprocessedPath = join(SCREENSHOTS_DIR, `${restaurant.id}-preprocessed.png`);
     const metadata = await sharp(framePath).metadata();
 
-    const cropTop = Math.floor(metadata.height * 0.15);
-    const cropBottom = Math.floor(metadata.height * 0.25);
-    const cropRight = Math.floor(metadata.width * 0.25);
+    const cropTop = Math.floor(metadata.height * 0.12);
+    const cropBottom = Math.floor(metadata.height * 0.18);
+    const cropRight = Math.floor(metadata.width * 0.15);
+    const cropWidth = metadata.width - cropRight;
 
     await sharp(framePath)
       .extract({
         left: 0,
         top: cropTop,
-        width: metadata.width - cropRight,
+        width: cropWidth,
         height: metadata.height - cropTop - cropBottom,
       })
+      .resize({ width: cropWidth * 2 })
       .grayscale()
-      .sharpen()
-      .normalise()
+      .threshold(130)
       .toFile(preprocessedPath);
 
     // OCR
