@@ -511,18 +511,19 @@ async function main() {
         continue;
       }
 
-      // body 첫 줄의 날짜를 YYYY-MM-DD 요일 형태로 정규화
-      const days = ['일', '월', '화', '수', '목', '금', '토'];
-      const dayOfWeek = days[new Date(menuDate).getDay()];
-      const normalizedDateLine = `${menuDate} ${dayOfWeek}요일`;
+      // body에서 날짜 라인 제거 (상단 DateNav에 이미 표시됨)
       const bodyLines = result.body.split('\n');
-      // 첫 줄이 날짜 정보면 교체, 아니면 앞에 추가
-      if (bodyLines[0] && (bodyLines[0].includes('월') || bodyLines[0].includes('원')) && bodyLines[0].includes('일')) {
-        bodyLines[0] = normalizedDateLine;
-      } else {
-        bodyLines.unshift(normalizedDateLine);
-      }
-      const normalizedBody = bodyLines.join('\n');
+      const filtered = bodyLines.filter(l => {
+        const t = l.trim();
+        if (!t) return true;
+        // YYYY-MM-DD, YYYY년 MM월 DD일, N월 N일, (예정) ... 날짜 패턴
+        if (/^\d{4}-\d{2}-\d{2}/.test(t)) return false;
+        if (/^\(예정\)\s*\d{4}년/.test(t)) return false;
+        if (/^\d{4}년\s*\d{1,2}월\s*\d{1,2}일/.test(t)) return false;
+        if (/^\(?\@*\d{1,2}[월원]\s*\d{1,2}일/.test(t)) return false;
+        return true;
+      });
+      const cleanBody = filtered.join('\n').replace(/^\n+/, '');
 
       // 해당 날짜 파일에 식당 데이터 저장
       const filePath = join(DATA_DIR, `${menuDate}.json`);
@@ -533,9 +534,10 @@ async function main() {
       dayData.restaurants[restaurant.id] = {
         url: result.url,
         title: result.title,
-        body: normalizedBody,
+        body: cleanBody,
         image: result.image,
       };
+      dayData.updatedAt = new Date().toISOString();
       writeFileSync(filePath, JSON.stringify(dayData, null, 2), 'utf-8');
       console.log(`  메뉴 날짜: ${menuDate}`);
       console.log(`  완료: ${result.body.substring(0, 80)}...`);

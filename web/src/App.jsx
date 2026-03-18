@@ -91,8 +91,13 @@ function App() {
           ))}
         </div>
       </main>
-      <footer className="text-center mt-12 pb-6 text-stone text-sm">
-        매일 오전 10시 자동 업데이트
+      <footer className="text-center mt-12 pb-6 text-stone text-sm space-y-1">
+        <p>매일 오전 10시 자동 업데이트</p>
+        {dayData?.updatedAt && (
+          <p className="text-xs text-stone-light">
+            마지막 업데이트: {new Date(dayData.updatedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+          </p>
+        )}
       </footer>
     </div>
   )

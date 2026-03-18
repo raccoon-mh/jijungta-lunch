@@ -86,9 +86,9 @@ export function parseMenuSections(text) {
   for (const line of lines) {
     const trimmed = line.trim()
 
-    // 날짜/예정 라인은 스킵
+    // 날짜 라인은 스킵
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) continue
     if (trimmed.startsWith('(예정)') || /^\d{4}년/.test(trimmed)) continue
-    // OCR 날짜 라인 스킵 (예: "3월 13일 금요일메뉴")
     if (/^\d{1,2}월\s*\d{1,2}일/.test(trimmed)) continue
     // 안내문 스킵
     if (trimmed.startsWith('※')) continue
@@ -113,21 +113,3 @@ export function parseMenuSections(text) {
   return sections
 }
 
-// 날짜 텍스트 추출
-export function parseDateFromBody(body) {
-  if (!body) return null
-  // goodfood_xi 형식: 2026년 03월 16일 월요일
-  const match1 = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*([월화수목금토일]요일)/)
-  if (match1) {
-    return `${match1[1]}.${match1[2].padStart(2, '0')}.${match1[3].padStart(2, '0')} ${match1[4]}`
-  }
-  // gangnambab OCR 형식: 3월 13일 금요일 (앞에 숫자 노이즈 가능: 03월, 063월)
-  const match2 = body.match(/(\d+)월\s*(\d{1,2})일\s*([월화수목금토일]요일)/)
-  if (match2) {
-    const year = new Date().getFullYear()
-    let month = parseInt(match2[1], 10)
-    if (month > 12) month = parseInt(match2[1].slice(-1), 10)
-    return `${year}.${String(month).padStart(2, '0')}.${match2[2].padStart(2, '0')} ${match2[3]}`
-  }
-  return null
-}

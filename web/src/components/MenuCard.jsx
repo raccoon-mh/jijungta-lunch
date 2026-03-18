@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cn } from '../lib/utils'
-import { parseMenuBody, parseMenuSections, parseDateFromBody } from '../lib/restaurants'
+import { parseMenuBody, parseMenuSections } from '../lib/restaurants'
 import { MapPin, Clock, Car, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 
 const colorMap = {
@@ -76,7 +76,6 @@ export function MenuCard({ restaurant, data, loading, index }) {
 
   const menuText = parseMenuBody(data?.body)
   const sections = parseMenuSections(menuText)
-  const menuDate = parseDateFromBody(data?.body)
 
   return (
     <div
@@ -114,17 +113,6 @@ export function MenuCard({ restaurant, data, loading, index }) {
             </a>
           )}
         </div>
-
-        {/* 날짜 배지 */}
-        {menuDate && (
-          <div className={cn(
-            'inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium mt-2 mb-3 ring-1',
-            colors.badge,
-          )}>
-            <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-            {menuDate}
-          </div>
-        )}
 
         {/* 메뉴 섹션 */}
         <div className={cn(
