@@ -14,10 +14,12 @@ const AUTH_PATH = '~/.auth/instagram';
 // 본문에서 메뉴 날짜 추출 (YYYY-MM-DD)
 function extractMenuDate(body) {
   if (!body) return null;
-  const m1 = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  // OCR 노이즈: '월'→'원' 오인식 대응
+  const normalized = body.replace(/원(\s*\d{1,2}일)/g, '월$1');
+  const m1 = normalized.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
   if (m1) return validateDate(parseInt(m1[1]), parseInt(m1[2]), parseInt(m1[3]));
   // OCR 노이즈 대응: 앞에 숫자가 붙을 수 있으므로 끝 1~2자리만 추출 (063→3, 012→12)
-  const m2 = body.match(/(\d+)월\s*(\d{1,2})일/);
+  const m2 = normalized.match(/(\d+)월\s*(\d{1,2})일/);
   if (m2) {
     const year = new Date().getFullYear();
     const rawMonth = m2[1];
@@ -43,8 +45,8 @@ function parseOcrMenu(ocrText, skipPatterns = []) {
   let dateInfo = '';
 
   for (const line of lines) {
-    // 날짜 추출
-    if (line.includes('월') && line.includes('일') && (line.includes('메뉴') || line.includes('요일'))) {
+    // 날짜 추출 (OCR 노이즈: '월'→'원' 오인식 대응)
+    if ((line.includes('월') || line.includes('원')) && line.includes('일') && (line.includes('메뉴') || line.includes('요일'))) {
       dateInfo = line.replace(/@@/g, '').replace(/@/g, '').replace(/메뉴.*$/, '메뉴').trim();
       continue;
     }
