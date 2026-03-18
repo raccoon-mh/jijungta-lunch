@@ -324,7 +324,7 @@ async function crawlVideoOcr(context, restaurant) {
       })
       .resize({ width: cropWidth * 2 })
       .grayscale()
-      .threshold(130)
+      .threshold(180)
       .toFile(preprocessedPath);
 
     // OCR
@@ -511,6 +511,19 @@ async function main() {
         continue;
       }
 
+      // body 첫 줄의 날짜를 YYYY-MM-DD 요일 형태로 정규화
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const dayOfWeek = days[new Date(menuDate).getDay()];
+      const normalizedDateLine = `${menuDate} ${dayOfWeek}요일`;
+      const bodyLines = result.body.split('\n');
+      // 첫 줄이 날짜 정보면 교체, 아니면 앞에 추가
+      if (bodyLines[0] && (bodyLines[0].includes('월') || bodyLines[0].includes('원')) && bodyLines[0].includes('일')) {
+        bodyLines[0] = normalizedDateLine;
+      } else {
+        bodyLines.unshift(normalizedDateLine);
+      }
+      const normalizedBody = bodyLines.join('\n');
+
       // 해당 날짜 파일에 식당 데이터 저장
       const filePath = join(DATA_DIR, `${menuDate}.json`);
       let dayData = { date: menuDate, restaurants: {} };
@@ -520,7 +533,7 @@ async function main() {
       dayData.restaurants[restaurant.id] = {
         url: result.url,
         title: result.title,
-        body: result.body,
+        body: normalizedBody,
         image: result.image,
       };
       writeFileSync(filePath, JSON.stringify(dayData, null, 2), 'utf-8');
