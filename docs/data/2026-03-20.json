@@ -1,0 +1,18 @@
+{
+  "date": "2026-03-20",
+  "restaurants": {
+    "goodfood_xi": {
+      "url": "https://pf.kakao.com/_ExjIAn",
+      "title": "굿푸드(상상자이점)",
+      "body": "<한식코너>\n탕수육&군만두\n돈채죽순볶음\n직화간짜장\n중화면\n양장피\n꽃빵\n단무지\n포기김치\n중식계란국\n\n<즉석코너>\n맛살계란볶음밥 (+ 한식코너)\n\n<공통 사이드>\n온(溫)김치말이국수\n새우칩\n크림스프\n탄산음료",
+      "image": "https://k.kakaocdn.net/dn/jKqTW/dJMcaio6MAJ/WqF67RAKDrTuhr5Q4gKb61/img_xl.jpg"
+    },
+    "lunchtime": {
+      "url": "https://pf.kakao.com/_xbbMPn",
+      "title": "런치타임 (과천 어반허브)",
+      "body": "시골된장찌개\n캠핑통마늘목살구이\n슈프림모듬튀김강정\n팔도비빔면\n꿀떡꿀떡\n포기김치\n잡곡밥/백미밥\n그린샐러드&드레싱\n셀프한강라면*토스트\n쌈채소*풋고추*쌈장\n탄산음료",
+      "image": "https://k.kakaocdn.net/dn/nrXzY/dJMcaaq4THf/ykC9qYFMIUwIjprO5Rwhtk/img_xl.jpg"
+    }
+  },
+  "updatedAt": "2026-03-20T00:01:11.775Z"
+}
