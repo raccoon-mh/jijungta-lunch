@@ -1,0 +1,24 @@
+{
+  "date": "2026-07-08",
+  "restaurants": {
+    "goodfood_xi": {
+      "url": "https://pf.kakao.com/_ExjIAn",
+      "title": "굿푸드(상상자이점)",
+      "body": "<한식코너>\n안동찜닭\n미니돈까스\n야채스크램블에그\n버섯크림스파게티\n새우호박볶음\n무생채무침\n포기김치\n김치국\n\n<즉석코너>\n참치마요덮밥 (+ 한식코너)\n\n<공통 사이드>\n냉(冷)모밀국수\n새우칩\n크림스프\n양배추샐러드\n탄산음료",
+      "image": ""
+    },
+    "gangnambab": {
+      "url": "https://www.instagram.com/gangnambab/reel/Dagg1sCztzW/",
+      "title": "강남밥상 과천점",
+      "body": "셀프계란후라이 매실차\n누룸지 콘푸레이크\n얼같이나물무침\n알타리김치\n도시락김김\n오이피클\n과일\n야채샐러드\n배추김치\n토스트 / 커피 (",
+      "image": "https://scontent-ssn1-1.cdninstagram.com/v/t51.71878-15/731787247_1323713839830302_4006175893216186796_n.jpg?stp=cmp1_dst-jpg_e35_s640x640_tt6&_nc_cat=108&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiQ0xJUFMuYmVzdF9pbWFnZV91cmxnZW4uQzMifQ%3D%3D&_nc_ohc=Re0iINfRmpsQ7kNvwHiPrYB&_nc_oc=AdoueQZr8M_6Boeo5p23FjbdoH9Mi-Jfw6rl7us7u8oSFsMkHUto-_Z65VadTn1cJ-k&_nc_zt=23&_nc_ht=scontent-ssn1-1.cdninstagram.com&_nc_gid=Q5PTMuU9-w9uLSbkhHhUng&_nc_ss=7b689&oh=00_AQA6TXxzIgdx4dHobZ_EDTsJWSbkQt_H4r0HEzIngTR6OQ&oe=6A53526A"
+    },
+    "lunchtime": {
+      "url": "https://pf.kakao.com/_xbbMPn",
+      "title": "런치타임 (과천 어반허브)",
+      "body": "완도들깨미역국\n매콤봉추찜닭\n돈채고추잡채밥*\n아이스황도토마토\n들기름고사리볶음\n포기김치\n웰빙흑미밥/백미밥\n그린샐러드&드레싱\n셀프한강라면*토스트\n: 쌈채소*풋고추*쌈장\n탄산음료*복분자",
+      "image": "https://k.kakaocdn.net/dn/cblkJ8/dJMcaazb3Bt/2JUOiDpKCJkMqMlwnl2H1K/img_xl.jpg"
+    }
+  },
+  "updatedAt": "2026-07-08T00:00:27.835Z"
+}
