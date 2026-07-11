@@ -54,13 +54,13 @@ async function main() {
       process.exit(1);
     }
 
-    await page.locator('input[name="verificationCode"]').fill(code);
+    await page.locator('input[name="verificationCode"], input[autocomplete="one-time-code"], input[type="text"]').first().fill(code);
     const checkbox = page.locator('input[name="checkbox"]');
     if (await checkbox.count() > 0 && !(await checkbox.isChecked())) {
       await checkbox.check();
     }
     await page.waitForTimeout(500);
-    await page.locator('button:has-text("확인"), button:has-text("Confirm")').first().click();
+    await page.locator('button:has-text("확인"), button:has-text("Confirm"), button:has-text("계속"), button:has-text("Continue")').first().click();
     await page.waitForTimeout(10000);
   }
 
