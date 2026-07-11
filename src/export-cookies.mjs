@@ -60,7 +60,10 @@ async function main() {
       await checkbox.check();
     }
     await page.waitForTimeout(500);
-    await page.locator('button:has-text("확인"), button:has-text("Confirm"), button:has-text("계속"), button:has-text("Continue")').first().click();
+    const otpSubmit = page.locator('input[type="submit"], [role="button"]:has-text("계속"), [role="button"]:has-text("확인"), button:has-text("계속"), button:has-text("확인")').first();
+    await otpSubmit.click({ timeout: 8000 }).catch(async () => {
+      await page.locator('input[name="verificationCode"], input[type="text"]').first().press('Enter');
+    });
     await page.waitForTimeout(10000);
   }
 
