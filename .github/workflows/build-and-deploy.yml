@@ -1,0 +1,78 @@
+name: build-and-deploy
+
+# self-hosted 러너(raccoonlab): 정적 사이트 이미지 빌드(base=/) → registry push → 서버 재배포.
+# GitHub Pages(pages.yml)와 별개 — 이건 lunch.raccoonhub.me(홈서버) 용.
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "docs/data/**", "Dockerfile", ".github/workflows/build-and-deploy.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: lunch-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: [self-hosted, raccoonlab]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Registry login
+        run: echo "${{ secrets.REGISTRY_PASS }}" | docker login registry.raccoonhub.me -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Build & push
+        run: |
+          set -e
+          SHA="${GITHUB_SHA::12}"
+          docker build -t "registry.raccoonhub.me/jijungta-lunch:latest" \
+                       -t "registry.raccoonhub.me/jijungta-lunch:${SHA}" .
+          docker push "registry.raccoonhub.me/jijungta-lunch:latest"
+          docker push "registry.raccoonhub.me/jijungta-lunch:${SHA}"
+
+      - name: Deploy on server
+        run: cd /data/apps/lunch && docker compose pull && docker compose up -d && docker compose ps
+
+      # 보존 정책: 오래된 :<sha> 태그 최근 3개만 유지 + GC + 호스트 docker 정리
+      - name: Prune registry tags (keep 3)
+        continue-on-error: true
+        env:
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
+        run: |
+          python3 - <<'PY'
+          import base64, json, os, ssl, subprocess, urllib.request
+          REG="registry.raccoonhub.me"; REPO="jijungta-lunch"; KEEP=3
+          AUTH="Basic "+base64.b64encode(f"{os.environ['REGISTRY_USER']}:{os.environ['REGISTRY_PASS']}".encode()).decode()
+          ACC=", ".join(["application/vnd.docker.distribution.manifest.v2+json","application/vnd.oci.image.manifest.v1+json",
+                         "application/vnd.docker.distribution.manifest.list.v2+json","application/vnd.oci.image.index.v1+json"])
+          ctx=ssl.create_default_context()
+          def req(m,p,a=False):
+              r=urllib.request.Request(f"https://{REG}{p}",method=m); r.add_header("Authorization",AUTH)
+              if a: r.add_header("Accept",ACC)
+              return urllib.request.urlopen(r,context=ctx,timeout=30)
+          def dig(ref):
+              with req("HEAD",f"/v2/{REPO}/manifests/{ref}",True) as r: return r.headers.get("Docker-Content-Digest")
+          order=subprocess.check_output(["git","log","--format=%H"]).decode().split()
+          rank={h[:12]:i for i,h in enumerate(order)}
+          with req("GET",f"/v2/{REPO}/tags/list") as r: tags=json.load(r).get("tags") or []
+          shas=[t for t in tags if len(t)==12 and all(c in "0123456789abcdef" for c in t)]
+          known=sorted((t for t in shas if t in rank), key=lambda t: rank[t])
+          keep=known[:KEEP]; keepd={dig(x) for x in ["latest",*keep]}
+          print(f"[{REPO}] keep={keep} delete={known[KEEP:]}")
+          for t in known[KEEP:]:
+              d=dig(t)
+              if d in keepd: continue
+              req("DELETE",f"/v2/{REPO}/manifests/{d}").read(); print(f"  deleted {t}")
+          PY
+
+      - name: GC + prune host docker
+        continue-on-error: true
+        run: |
+          SHA="${GITHUB_SHA::12}"
+          docker exec registry registry garbage-collect --delete-untagged=false /etc/docker/registry/config.yml 2>&1 | tail -2 || true
+          docker builder prune -f --filter until=168h || true
+          docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^registry\.raccoonhub\.me/jijungta-lunch:[0-9a-f]{12}$' | grep -v ":${SHA}$" | xargs -r docker rmi 2>/dev/null || true
+          docker image prune -f
