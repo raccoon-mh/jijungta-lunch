@@ -76,6 +76,9 @@ export function MenuCard({ restaurant, data, loading, index }) {
 
   const menuText = parseMenuBody(data?.body)
   const sections = parseMenuSections(menuText)
+  // 텍스트 메뉴가 없고 이미지만 있는 식당(예: 런치타임 메뉴판 사진)은 이미지를 그대로 표시
+  const imageOnly = sections.length === 0 && !!data?.image
+  const showToggle = sections.length > 0 || imageOnly
 
   return (
     <div
@@ -107,7 +110,7 @@ export function MenuCard({ restaurant, data, loading, index }) {
               target="_blank"
               rel="noopener noreferrer"
               className="text-stone-light hover:text-warm-500 transition-colors p-1"
-              title="Instagram에서 보기"
+              title="원본 게시글 보기"
             >
               <ExternalLink size={14} />
             </a>
@@ -138,13 +141,22 @@ export function MenuCard({ restaurant, data, loading, index }) {
                 </ul>
               </div>
             ))
+          ) : imageOnly ? (
+            <a href={data.image} target="_blank" rel="noopener noreferrer" className="block" title="원본 이미지 보기">
+              <img
+                src={data.image}
+                alt={`${restaurant.name} 메뉴판`}
+                loading="lazy"
+                className="w-full rounded-lg border border-cream-dark"
+              />
+            </a>
           ) : (
             <p className="text-sm text-stone-light italic">메뉴 정보 없음</p>
           )}
         </div>
 
         {/* 더보기 버튼 */}
-        {sections.length > 0 && (
+        {showToggle && (
           <button
             onClick={() => setExpanded(e => !e)}
             className="mt-3 flex items-center justify-center gap-1 text-xs text-stone hover:text-charcoal transition-colors w-full py-1.5"
