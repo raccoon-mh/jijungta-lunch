@@ -1,0 +1,106 @@
+{
+  "name": "지정타 점심 크롤러",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "name": "Schedule 평일 10시",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// === 지정타 점심 크롤러 (n8n Code 노드) =========================================\n// 브라우저 없음. 카카오채널 JSON API + 채널 og:image 만 사용.\n//  - goodfood_xi : /posts 최신 글의 메뉴 텍스트\n//  - lunchtime   : 채널 프로필 이미지(og:image) = 오늘 메뉴판 (OCR 없이 이미지 그대로)\n// 기존 파일 내용+sha 는 GitHub Contents API(공개 레포=무인증 GET)로 획득.\n// 출력: 변경된 파일마다 1 아이템 { path, body{message,content(base64),branch,sha?} }.\n//       → 다음 HTTP Request(PUT, Header Auth 크레덴셜) 노드가 파일당 커밋.\n// 변경 없으면 0 아이템 → 커밋 안 함(빈 커밋 방지).\n// ==============================================================================\nconst OWNER = 'raccoon-mh', REPO = 'jijungta-lunch', BRANCH = 'main';\nconst GH = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;\nconst req = this.helpers.httpRequest;\n\nconst RESTAURANTS = {\n  goodfood_xi: { code: '_ExjIAn', title: '굿푸드(상상자이점)' },\n  lunchtime:   { code: '_xbbMPn', title: '런치타임 (과천 어반허브)' },\n};\n\n// ---- utils ----\nconst pad = (n) => String(n).padStart(2, '0');\nfunction validateDate(y, m, d) {\n  if (m < 1 || m > 12 || d < 1 || d > 31) return null;\n  const dt = new Date(Date.UTC(y, m - 1, d));\n  return dt.getUTCMonth() === m - 1 ? `${y}-${pad(m)}-${pad(d)}` : null;\n}\nfunction dateFromTitle(t) {\n  const m = (t || '').match(/(\\d{4})년\\s*(\\d{1,2})월\\s*(\\d{1,2})일/);\n  return m ? validateDate(+m[1], +m[2], +m[3]) : null;\n}\nfunction kstDate(ms) {\n  const d = new Date(ms + 9 * 3600 * 1000);\n  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;\n}\nconst xl = (u) => (u || '').replace(/^http:/, 'https:').replace(/img_[a-z]+\\.jpg/i, 'img_xl.jpg');\nconst imgKey = (u) => { const m = (u || '').match(/dn\\/([^/]+\\/[^/]+\\/[^/]+)\\//); return m ? m[1] : (u || ''); };\nfunction cleanTextBody(v) {\n  if (!v) return '';\n  let b = v.replace(/※※[\\s\\S]*?※※/g, '').replace(/ /g, ' ');\n  const h = b.indexOf('#'); if (h !== -1) b = b.slice(0, h);\n  return b.replace(/📍[\\s\\S]*$/m, '').trim();\n}\nconst eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);\nconst b64 = (s) => Buffer.from(s, 'utf8').toString('base64');\n\nasync function getJson(url) { try { return await req({ url, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' }, json: true }); } catch { return null; } }\nasync function getText(url) { try { return await req({ url, headers: { 'User-Agent': 'Mozilla/5.0' } }); } catch { return ''; } }\nconst kakaoPosts = (code) => `https://pf.kakao.com/rocket-web/web/profiles/${code}/posts?limit=5`;\n\n// GitHub Contents API (무인증 GET) → { obj: 파싱된 JSON|null, sha: string|null }\nasync function ghGet(path) {\n  try {\n    const r = await req({ url: `${GH}/${path}?ref=${BRANCH}`, headers: { 'User-Agent': 'n8n-lunch', Accept: 'application/vnd.github+json' }, json: true });\n    const content = Buffer.from(r.content || '', r.encoding || 'base64').toString('utf8');\n    return { obj: content ? JSON.parse(content) : null, sha: r.sha || null };\n  } catch { return { obj: null, sha: null }; } // 404=신규\n}\n\n// ---- crawlers ----\nasync function crawlGoodfood() {\n  const r = RESTAURANTS.goodfood_xi;\n  const data = await getJson(kakaoPosts(r.code));\n  const post = (data?.items || []).find(p => (p.contents || []).some(c => c.t === 'text')) || data?.items?.[0];\n  if (!post) return null;\n  const body = cleanTextBody(((post.contents || []).find(c => c.t === 'text') || {}).v || '');\n  const menuDate = dateFromTitle(post.title) || kstDate(post.published_at || post.created_at);\n  // goodfood는 프론트에서 텍스트로 표시(image 미사용) → 원본과 동일하게 빈 문자열(불필요한 재커밋 방지)\n  return { id: 'goodfood_xi', menuDate, entry: { url: `https://pf.kakao.com/${r.code}`, title: r.title, body, image: '' } };\n}\nasync function crawlLunchtime(today, lastKey) {\n  const r = RESTAURANTS.lunchtime;\n  const html = await getText(`https://pf.kakao.com/${r.code}`);\n  const m = html.match(/<meta property=\"og:image\" content=\"([^\"]+)\"/);\n  if (!m) return null;\n  const image = xl(m[1]);\n  if (lastKey && imgKey(image) === lastKey) return null; // 미갱신 → 스킵\n  return { id: 'lunchtime', menuDate: today, entry: { url: `https://pf.kakao.com/${r.code}`, title: r.title, body: '', image } };\n}\n\n// ================================ main ================================\nconst today = DateTime.now().setZone('Asia/Seoul').toFormat('yyyy-LL-dd');\n\n// dates 인덱스 (내용+sha)\nconst datesFile = await ghGet('docs/data/dates.json');\nconst idx = Array.isArray(datesFile.obj) ? datesFile.obj : [];\n\n// lunchtime stale 가드: 최근 저장된 lunchtime 이미지 key\nlet lastKey = '';\nfor (const d of idx.slice(0, 5)) {\n  const day = await ghGet(`docs/data/${d}.json`);\n  const img = day.obj?.restaurants?.lunchtime?.image;\n  if (img) { lastKey = imgKey(img); break; }\n}\n\nconst results = [];\nfor (const c of [crawlGoodfood(), crawlLunchtime(today, lastKey)]) {\n  try { const r = await c; if (r) results.push(r); } catch (e) { /* skip one restaurant */ }\n}\n\n// 날짜별 병합 + 변경분만 파일화\nconst byDate = {};\nfor (const r of results) { if (!r.menuDate) continue; (byDate[r.menuDate] ??= {})[r.id] = r.entry; }\n\nconst stamp = DateTime.now().toISO();\nconst items = [];\nlet dates = idx.slice();\nconst changed = [];\nfor (const [date, rests] of Object.entries(byDate)) {\n  const existing = await ghGet(`docs/data/${date}.json`);\n  const base = existing.obj || { date, restaurants: {} };\n  const mergedRest = { ...base.restaurants, ...rests };\n  if (eq(mergedRest, base.restaurants)) continue; // 동일 → 스킵\n  const day = { date, restaurants: mergedRest, updatedAt: stamp };\n  const body = { message: `data: ${date} 점심 메뉴 업데이트`, content: b64(JSON.stringify(day, null, 2)), branch: BRANCH };\n  if (existing.sha) body.sha = existing.sha;\n  items.push({ json: { path: `docs/data/${date}.json`, body } });\n  changed.push(date);\n  if (!dates.includes(date)) dates.push(date);\n}\ndates = [...new Set(dates)].sort().reverse();\nif (!eq(dates, idx)) {\n  const body = { message: `data: dates.json 갱신 (${changed.join(', ')})`, content: b64(JSON.stringify(dates, null, 2)), branch: BRANCH };\n  if (datesFile.sha) body.sha = datesFile.sha;\n  items.push({ json: { path: 'docs/data/dates.json', body } });\n}\n\nreturn items; // 0개면 커밋 안 함\n"
+      },
+      "id": "b2222222-2222-4222-8222-222222222222",
+      "name": "크롤+병합",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/raccoon-mh/jijungta-lunch/contents/{{ $json.path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-lunch-crawler"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "c3333333-3333-4333-8333-333333333333",
+      "name": "GitHub PUT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KnKLoWUij80R9GU2",
+          "name": "jijungta GitHub (Header Auth)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule 평일 10시": {
+      "main": [
+        [
+          {
+            "node": "크롤+병합",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "크롤+병합": {
+      "main": [
+        [
+          {
+            "node": "GitHub PUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  }
+}
