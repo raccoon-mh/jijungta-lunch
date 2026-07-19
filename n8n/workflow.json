@@ -7,13 +7,17 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 10 * * 1-5"
+              "expression": "0,30 9,10 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 11 * * 1-5"
             }
           ]
         }
       },
       "id": "a1111111-1111-4111-8111-111111111111",
-      "name": "Schedule 평일 10시",
+      "name": "Schedule 평일 9~11시/30분",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -76,7 +80,7 @@
     }
   ],
   "connections": {
-    "Schedule 평일 10시": {
+    "Schedule 평일 9~11시/30분": {
       "main": [
         [
           {

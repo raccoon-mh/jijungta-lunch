@@ -6,7 +6,7 @@
 ## 동작
 
 raccoonlab 홈서버의 n8n(`n8n.raccoonhub.me`) 워크플로우 **"지정타 점심 크롤러"**.
-평일 10:00 KST 스케줄 → Code 노드 → HTTP PUT 노드.
+평일 09:00~11:00 KST 30분 간격(5회) 스케줄 → Code 노드 → HTTP PUT 노드.
 
 - **goodfood_xi**(굿푸드 상상자이): 카카오채널 JSON API
   `GET https://pf.kakao.com/rocket-web/web/profiles/_ExjIAn/posts` → `contents[0].v` 메뉴 텍스트. OCR 불필요.
