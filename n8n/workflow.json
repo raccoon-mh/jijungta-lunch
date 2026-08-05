@@ -61,7 +61,14 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}",
-        "options": {}
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          }
+        }
       },
       "id": "c3333333-3333-4333-8333-333333333333",
       "name": "GitHub PUT",
@@ -76,7 +83,10 @@
           "id": "KnKLoWUij80R9GU2",
           "name": "jijungta GitHub (Header Auth)"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     }
   ],
   "connections": {

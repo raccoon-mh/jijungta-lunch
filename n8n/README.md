@@ -36,6 +36,24 @@ raccoonlab 홈서버의 n8n(`n8n.raccoonhub.me`) 워크플로우 **"지정타 �
 HTTP PUT(Contents API, `docs/data/<date>.json` + `dates.json`)로 커밋 → GitHub Pages 갱신.
 변경 없으면 커밋 안 함(빈 커밋 방지).
 
+### 09:00 실행만 실패하던 sha 충돌 (2026-08-05 수정)
+
+증상: **매일 첫 실행(09:00)만 `error`**, 09:30 이후는 정상. 데이터는 다음 실행이 덮어써서 손실은 없었다.
+에러는 `dates.json` PUT 에서 `is at <커밋A> but expected <커밋B>`.
+
+원인은 **파일 sha 가 낡아서가 아니다** — 보낸 blob sha 는 실제 직전 상태와 정확히 일치했다.
+그날 첫 실행만 PUT 이 2개(`<date>.json` 신규 + `dates.json` 갱신)인데, 두 PUT 이 밀리초 간격으로
+나가면서 **GitHub 이 브랜치 ref 를 fast-forward 하는 단계에서 경합**한 것. 첫 PUT 은 성공해 커밋이
+남고 두 번째가 409 로 떨어진다(그래서 "커밋은 됐는데 실행은 error" 라는 모순처럼 보인다).
+09:30 이후 실행은 대개 PUT 이 0~1개라 재현되지 않았다.
+
+대책(HTTP Request 노드):
+- `options.batching = { batch: { batchSize: 1, batchInterval: 2000 } }` — 아이템당 1건씩, 2초 간격.
+- `retryOnFail: true, maxTries: 3, waitBetweenTries: 5000` — 그래도 밀리면 재시도.
+  blob sha 자체는 유효하므로 ref 경합만 풀리면 재시도가 성공한다.
+
+식당을 추가하면 PUT 이 더 늘어나 경합 확률도 올라가므로 **이 설정을 지우지 말 것**.
+
 ## 파일
 
 - `crawl.code.js` — Code 노드 소스(정본). n8n Code 노드에 붙여넣는 내용.
