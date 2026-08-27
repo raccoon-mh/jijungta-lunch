@@ -3,8 +3,9 @@
 //  - goodfood_xi : /posts 최신 글의 메뉴 텍스트
 //  - lunchtime   : 채널 프로필 이미지(og:image) = 오늘 메뉴판 (OCR 없이 이미지 그대로)
 //  - cookingtree : lunchtime 과 동일 패턴(글 없이 프로필 이미지만 갈아끼우는 채널)
-//  - gangnambab  : 인스타 릴스. 미러(imginn)의 og:description = 인스타 자동 alt 텍스트에
-//                  메뉴판 문구가 이미 들어있어 영상/OCR 없이 파싱만 한다.
+//  - gangnambab  : 인스타 릴스. 인스타 자동 alt(accessibility_caption)에 메뉴판 문구가
+//                  통째로 들어있어 영상/OCR 없이 파싱만 한다. 크롤러 UA(Googlebot)로
+//                  게시물 페이지를 받으면 그 계정의 최근 게시물 alt 목록이 함께 온다.
 // 기존 파일 내용+sha 는 GitHub Contents API(공개 레포=무인증 GET)로 획득.
 // 출력: 변경된 파일마다 1 아이템 { path, body{message,content(base64),branch,sha?} }.
 //       → 다음 HTTP Request(PUT, Header Auth 크레덴셜) 노드가 파일당 커밋.
@@ -22,7 +23,12 @@ const RESTAURANTS = {
 };
 // 카카오채널 프로필 이미지가 곧 메뉴판인 식당들(글은 안 올리고 이미지만 갈아끼움)
 const KAKAO_IMAGE_RESTAURANTS = ['lunchtime', 'cookingtree'];
-const IG_MIRROR = 'https://imginn.com'; // 인스타 무로그인 미러(공개 프로필 읽기 전용)
+// 인스타 게시물 페이지는 일반 UA 로는 빈 JS 셸이지만, 크롤러 UA 로 받으면 SSR 된 JSON 이 실려
+// 온다(그 계정 최근 게시물의 shortcode + accessibility_caption). 프로필/릴스 탭에는 안 실린다.
+const IG_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+// 최신 게시물 목록을 얻기 위한 진입점. 평소엔 저장된 직전 메뉴 게시물을 시드로 쓰고, 그게
+// 지워졌을 때만 이 상수로 폴백한다(둘 다 죽으면 그날은 스킵 → 다음 스케줄에서 재시도).
+const IG_SEED = 'Dalr5e0zzDc';
 
 // ---- utils ----
 const pad = (n) => String(n).padStart(2, '0');
@@ -51,12 +57,21 @@ const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
 
 async function getJson(url) { try { return await req({ url, headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' }, json: true }); } catch { return null; } }
-async function getText(url) { try { return await req({ url, headers: { 'User-Agent': 'Mozilla/5.0' } }); } catch { return ''; } }
+async function getText(url, ua = 'Mozilla/5.0') { try { return await req({ url, headers: { 'User-Agent': ua } }); } catch { return ''; } }
 const kakaoPosts = (code) => `https://pf.kakao.com/rocket-web/web/profiles/${code}/posts?limit=5`;
-const ogMeta = (html, prop) => {
-  const m = (html || '').match(new RegExp(`<meta property="${prop}" content="([^"]*)"`));
-  return m ? m[1].replace(/&#38;|&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : '';
-};
+// 인스타 게시물 페이지 HTML → [{ code, caption }] (그 계정 최근 게시물, 최신순)
+function igPostsFromHtml(html) {
+  const out = [];
+  const seg = (html || '').split('"polaris_ordered_timeline_connection"')[1] || '';
+  for (const chunk of seg.split('{"node":{').slice(1)) {
+    const cap = chunk.match(/"accessibility_caption":"((?:[^"\\]|\\.)*)"/);
+    const code = chunk.match(/"code":"([A-Za-z0-9_-]{5,})"/);
+    if (!cap || !code) continue;
+    let caption; try { caption = JSON.parse('"' + cap[1] + '"'); } catch { continue; }
+    out.push({ code: code[1], caption });
+  }
+  return out;
+}
 
 // 인스타 alt 텍스트 → { menuDate, body }. 메뉴판 게시물이 아니면 null.
 const IG_MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
@@ -124,20 +139,23 @@ async function crawlKakaoImage(id, today, lastKey) {
   if (lastKey && imgKey(image) === lastKey) return null; // 미갱신 → 스킵
   return { id, menuDate: today, entry: { url: `https://pf.kakao.com/${r.code}`, title: r.title, body: '', image } };
 }
-// 강남밥상: 미러 프로필의 최근 게시물을 훑어 '오늘 메뉴판' 하나만 채택.
-// 메뉴판은 전날 저녁~아침에 올라오므로 게시일이 아니라 alt 안의 날짜로 판정한다.
-async function crawlGangnambab(today, maxPosts = 6) {
+// 강남밥상: 게시물 페이지 하나(시드)를 크롤러 UA 로 받으면 최근 게시물의 alt 가 함께 실려 온다.
+// 그중 '오늘 메뉴판' 하나만 채택 — 메뉴판은 전날 저녁~아침에 올라오므로 게시일이 아니라
+// alt 안의 날짜로 판정한다. 채택한 게시물 URL 을 그대로 저장해 다음 실행의 시드로 쓴다.
+async function crawlGangnambab(today, seedCodes = []) {
   const r = RESTAURANTS.gangnambab;
-  const prof = await getText(`${IG_MIRROR}/${r.user}/`);
-  const codes = [...new Set([...prof.matchAll(/href="\/(?:p|reel)\/([^/"]+)\//g)].map(x => x[1]))].slice(0, maxPosts);
-  for (const c of codes) {
-    const html = await getText(`${IG_MIRROR}/p/${c}/`);
-    const parsed = parseIgMenuAlt(ogMeta(html, 'og:description'));
-    if (!parsed || parsed.menuDate !== today) continue;
-    // 프론트가 body(텍스트)로 표시 → image는 goodfood와 동일하게 미사용(미러 URL 커밋 방지)
-    return { id: 'gangnambab', menuDate: parsed.menuDate, entry: { url: `https://www.instagram.com/${r.user}/`, title: r.title, body: parsed.body, image: '' } };
+  for (const seed of [...new Set([...seedCodes, IG_SEED])]) {
+    const posts = igPostsFromHtml(await getText(`https://www.instagram.com/p/${seed}/`, IG_UA));
+    if (!posts.length) continue; // 시드가 지워짐 → 다음 시드
+    for (const post of posts) {
+      const parsed = parseIgMenuAlt(post.caption);
+      if (!parsed || parsed.menuDate !== today) continue;
+      // 프론트가 body(텍스트)로 표시 → image 는 goodfood 와 동일하게 미사용
+      return { id: 'gangnambab', menuDate: parsed.menuDate, entry: { url: `https://www.instagram.com/${r.user}/reel/${post.code}/`, title: r.title, body: parsed.body, image: '' } };
+    }
+    return null; // 시드는 살아있고 오늘 메뉴만 아직 없음 → 다음 스케줄에서 재시도
   }
-  return null; // 아직 안 올라옴 → 다음 스케줄에서 재시도
+  return null;
 }
 
 // ================================ main ================================
@@ -147,22 +165,27 @@ const today = DateTime.now().setZone('Asia/Seoul').toFormat('yyyy-LL-dd');
 const datesFile = await ghGet('docs/data/dates.json');
 const idx = Array.isArray(datesFile.obj) ? datesFile.obj : [];
 
-// 이미지형 식당 stale 가드: 최근 저장된 이미지 key (하루치를 읽어 두 식당을 함께 채운다)
+// 최근 저장분에서 두 가지를 함께 긁는다(하루치 파일에 둘 다 들어있다):
+//  - 이미지형 식당 stale 가드용 직전 이미지 key
+//  - 강남밥상 인스타 시드 shortcode (직전에 채택한 게시물 = 확실히 살아있는 진입점)
 const lastKeys = {};
+const igSeeds = [];
 for (const d of idx.slice(0, 5)) {
-  if (KAKAO_IMAGE_RESTAURANTS.every(id => lastKeys[id])) break;
+  if (KAKAO_IMAGE_RESTAURANTS.every(id => lastKeys[id]) && igSeeds.length >= 2) break;
   const day = await ghGet(`docs/data/${d}.json`);
   for (const id of KAKAO_IMAGE_RESTAURANTS) {
     const img = day.obj?.restaurants?.[id]?.image;
     if (!lastKeys[id] && img) lastKeys[id] = imgKey(img);
   }
+  const seed = (day.obj?.restaurants?.gangnambab?.url || '').match(/\/(?:p|reel)\/([A-Za-z0-9_-]+)/);
+  if (seed && !igSeeds.includes(seed[1])) igSeeds.push(seed[1]);
 }
 
 const results = [];
 for (const c of [
   crawlGoodfood(),
   ...KAKAO_IMAGE_RESTAURANTS.map(id => crawlKakaoImage(id, today, lastKeys[id])),
-  crawlGangnambab(today),
+  crawlGangnambab(today, igSeeds),
 ]) {
   try { const r = await c; if (r) results.push(r); } catch (e) { /* skip one restaurant */ }
 }
