@@ -1,0 +1,30 @@
+{
+  "date": "2026-08-28",
+  "restaurants": {
+    "goodfood_xi": {
+      "url": "https://pf.kakao.com/_ExjIAn",
+      "title": "굿푸드(상상자이점)",
+      "body": "<한식코너>\n후라이드치킨\n간장마늘치킨\n잎새만두찜\n한식잡채\n도토리묵&양념장\n콘슬로우\n무말랭이무침\n포기김치\n콩나물국\n\n<즉석코너>\n함박스테이크 (+ 한식코너)\n\n<공통 사이드>\n냉(冷)모밀국수\n새우칩\n크림스프\n양배추샐러드\n탄산음료",
+      "image": ""
+    },
+    "lunchtime": {
+      "url": "https://pf.kakao.com/_xbbMPn",
+      "title": "런치타임 (과천 어반허브)",
+      "body": "",
+      "image": "https://k.kakaocdn.net/dn/M4dJB/dJMcadQHBJX/YzSgkmpfv9VquCzntSM7Jk/img_xl.jpg"
+    },
+    "cookingtree": {
+      "url": "https://pf.kakao.com/_eAqyxj",
+      "title": "쿠킹트리 한식뷔페",
+      "body": "",
+      "image": "https://k.kakaocdn.net/dn/gAMtG/dJMcahS4vLZ/FV8HRsUGYBfyVt0G0jcIY0/img_xl.jpg"
+    },
+    "gangnambab": {
+      "url": "https://www.instagram.com/gangnambab/reel/Dcj3hWOTMBX/",
+      "title": "강남밥상 과천점",
+      "body": "8월 28일 메뉴\n콩국수\n제육볶음\n모듬튀김\n떡볶이\n상추갯잎쌈\n김치볶음밥\n셀프계란후라이\n베이컨\n매실차\n누룽지\n콘푸레이크\n콩나물\n오이무침\n마늘고추지\n명엽채볶음\n과일\n야채샐러드\n배추김치\n토스트\n커피",
+      "image": ""
+    }
+  },
+  "updatedAt": "2026-08-28T09:00:02.908+09:00"
+}
