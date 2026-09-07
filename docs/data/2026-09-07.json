@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-07",
+  "restaurants": {
+    "goodfood_xi": {
+      "url": "https://pf.kakao.com/_ExjIAn",
+      "title": "굿푸드(상상자이점)",
+      "body": "<한식코너>\n대패숙주볶음\n맛살링튀김/케찹\n사천마파두부\n한식잡채\n명엽채볶음\n간장고추지\n포기김치\n미역국\n\n<즉석코너>\n치킨까스 (+ 한식코너)\n\n<공통 사이드>\n냉(冷)모밀국수\n새우칩\n크림스프\n양배추샐러드\n탄산음료",
+      "image": ""
+    },
+    "lunchtime": {
+      "url": "https://pf.kakao.com/_xbbMPn",
+      "title": "런치타임 (과천 어반허브)",
+      "body": "",
+      "image": "https://k.kakaocdn.net/dn/8CdMx/dJMcahy1tqD/yp8LsQV6jIKRORBQqiY9zK/img_xl.jpg"
+    },
+    "cookingtree": {
+      "url": "https://pf.kakao.com/_eAqyxj",
+      "title": "쿠킹트리 한식뷔페",
+      "body": "",
+      "image": "https://k.kakaocdn.net/dn/beNqZk/dJMcahsiZoC/SnpNrnWnhshBxkg6JPeuM0/img_xl.jpg"
+    },
+    "gangnambab": {
+      "url": "https://www.instagram.com/gangnambab/reel/Dc9jLimT4wT/",
+      "title": "강남밥상 과천점",
+      "body": "9월 7일 메뉴\n냉모밀\n제육볶음\n생선까스튀김\n물만두\n상추쌈\n셀프계란후라이&베이컨\n매실차\n누룽지\n콘푸레이크\n콩나물\n멸치볶음\n두부나물무침\n겉절이\n과일\n야채샐러드\n배추김치\n토스트\n커피",
+      "image": ""
+    }
+  },
+  "updatedAt": "2026-09-07T09:00:02.783+09:00"
+}
