@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-18",
+  "restaurants": {
+    "goodfood_xi": {
+      "url": "https://pf.kakao.com/_ExjIAn",
+      "title": "굿푸드(상상자이점)",
+      "body": "<한식코너>\n후라이드치킨\n간장마늘치킨\n청양동그랑땡&케찹\n한식잡채\n콘슬로우\n콩나물무침 \n단무지\n포기김치\n김치국\n\n<즉석코너>\n오므라이스 (+ 한식코너)\n\n<공통 사이드>\n냉(冷)모밀국수\n새우칩\n크림스프\n양배추샐러드\n탄산음료",
+      "image": ""
+    },
+    "lunchtime": {
+      "url": "https://pf.kakao.com/_xbbMPn",
+      "title": "런치타임 (과천 어반허브)",
+      "body": "",
+      "image": "https://k.kakaocdn.net/dn/cnoGDT/dJMcajp4LJZ/qA43VMRXunpGW5qPkzzK61/img_xl.jpg"
+    },
+    "cookingtree": {
+      "url": "https://pf.kakao.com/_eAqyxj",
+      "title": "쿠킹트리 한식뷔페",
+      "body": "",
+      "image": "https://k.kakaocdn.net/dn/xMQxW/dJMcagG9G86/IV1B1ntGxkT8hAY7pn0y0k/img_xl.jpg"
+    }
+  },
+  "updatedAt": "2026-09-18T09:00:04.009+09:00"
+}
