@@ -42,7 +42,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://api.github.com/repos/raccoon-mh/jijungta-lunch/contents/{{ $json.path }}",
+        "url": "=https://api.github.com/repos/raccoonhub-dev/jijungta-lunch/contents/{{ $json.path }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,

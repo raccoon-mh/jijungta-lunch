@@ -5,7 +5,7 @@ export GIT_SSH_COMMAND="ssh -i /root/.ssh/id_ed25519 -o StrictHostKeyChecking=ac
 git config user.name "Minhyeok LEE"
 git config user.email "wsx1341@gmail.com"
 git config pull.ff only
-git remote set-url origin git@github.com:raccoon-mh/jijungta-lunch.git
+git remote set-url origin git@github.com:raccoonhub-dev/jijungta-lunch.git
 
 # 즉시 1회 (테스트/수동): RUN_ONCE=1
 if [ "${RUN_ONCE:-0}" = "1" ]; then exec /app/crawl-once.sh; fi

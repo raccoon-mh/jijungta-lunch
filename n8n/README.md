@@ -79,7 +79,7 @@ picuki·gramhir·sotwe는 404, rsshub.app도 CF** — 무로그인 미러 생태
 ## 인증
 
 GitHub 커밋은 n8n **Header Auth 크레덴셜**(`Authorization: Bearer <PAT>`)로.
-- PAT: fine-grained, `raccoon-mh/jijungta-lunch` 레포 only, **Contents: Read and write**.
+- PAT: fine-grained, `raccoonhub-dev/jijungta-lunch` 레포 only, **Contents: Read and write**.
 - 서버에는 `~/workspace/.auth/jijungta-lunch-n8n`(형식 `PAT=github_pat_...`).
 - n8n Code 노드는 task runner가 env/credential 접근을 막으므로 토큰을 **HTTP 노드의 크레덴셜**로 처리(Code 노드는 커밋 안 함).
 

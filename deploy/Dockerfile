@@ -8,7 +8,7 @@ RUN curl -fsSLo /usr/local/bin/supercronic \
     && chmod +x /usr/local/bin/supercronic
 WORKDIR /app
 ARG REPO_REF=main
-RUN echo "ref=${REPO_REF}" && git clone --depth 50 https://github.com/raccoon-mh/jijungta-lunch.git .
+RUN echo "ref=${REPO_REF}" && git clone --depth 50 https://github.com/raccoonhub-dev/jijungta-lunch.git .
 RUN npm install --no-audit --no-fund
 RUN npx playwright install chromium
 COPY entrypoint.sh /entrypoint.sh
