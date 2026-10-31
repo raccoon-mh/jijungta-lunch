@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { cn } from '../lib/utils'
 import { parseMenuBody, parseMenuSections } from '../lib/restaurants'
-import { MapPin, Clock, Car, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { MapPin, Clock, Car, Wallet, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 
 const colorMap = {
   warm: {
@@ -179,6 +179,12 @@ export function MenuCard({ restaurant, data, loading, index }) {
             <Clock size={12} className="shrink-0" />
             <span>{restaurant.hours} · {restaurant.days}</span>
           </div>
+          {restaurant.price && (
+            <div className="flex items-center gap-1.5 text-xs text-stone">
+              <Wallet size={12} className="shrink-0" />
+              <span>{restaurant.price}</span>
+            </div>
+          )}
           {restaurant.parking && (
             <div className="flex items-center gap-1.5 text-xs text-stone">
               <Car size={12} className="shrink-0" />

@@ -1,4 +1,8 @@
 // 식당 설정 — 새 식당 추가 시 여기에 등록
+//
+// price: 카드 하단에 표시되는 가격 문구(자유 문자열, 예: '9,000원' / '점심 9,000원 · 아침 7,000원').
+//   크롤 소스(카카오채널 글·인스타 alt)에 가격이 전혀 없고 지도/리뷰 사이트도 막혀 있어
+//   **수동으로 채우는 값**이다. null 이면 그 줄은 렌더되지 않는다. 가격이 바뀌면 여기만 고칠 것.
 export const restaurants = [
   {
     id: 'goodfood_xi',
@@ -7,6 +11,7 @@ export const restaurants = [
     location: '과천상상자이타워 B1',
     hours: '11:00 ~ 14:00',
     days: '월~금',
+    price: null,
     parking: '1시간 무료',
     active: true,
     color: 'warm',
@@ -19,6 +24,7 @@ export const restaurants = [
     location: '과천대로7나길 37 2층',
     hours: '05:30 ~ 14:00',
     days: '월~금',
+    price: null,
     parking: null,
     active: true,
     color: 'terra',
@@ -31,6 +37,7 @@ export const restaurants = [
     location: '과천 어반허브 구내식당',
     hours: '11:30 ~ 13:30',
     days: '월~금',
+    price: null,
     parking: null,
     active: true,
     color: 'sage',
@@ -43,6 +50,7 @@ export const restaurants = [
     location: '과천',
     hours: '점심',
     days: '월~금',
+    price: null,
     parking: null,
     active: true,
     color: 'stone',
